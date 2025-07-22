@@ -1,0 +1,1 @@
+console.log("🚀 Ads Agent running with modern TypeScript + Node.js!");

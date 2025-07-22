@@ -1,0 +1,27 @@
+{
+  "name": "ads-agent",
+  "version": "1.0.0",
+  "description": "",
+  "type": "module",
+  "main": "dist/index.js",
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsx src/index.ts",
+    "start": "node dist/index.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/danssaul/ads-agent.git"
+  },
+  "author": "Daniel Saul",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/danssaul/ads-agent/issues"
+  },
+  "homepage": "https://github.com/danssaul/ads-agent#readme",
+  "devDependencies": {
+    "ts-node": "^10.9.2",
+    "tsx": "^4.20.3",
+    "typescript": "^5.8.3"
+  }
+}
