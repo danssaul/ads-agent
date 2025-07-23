@@ -3,11 +3,24 @@ import { AdPromptData } from "./AdPromptData";
 export class PromptBuilder {
     static buildPromptAnalysis(userPrompt: string): string {
         return `
+You are a marketing assistant AI specialized in extracting structured ad data from natural language prompts.
+
+User request:
 "${userPrompt}"
 
-You are a marketing assistant with access to contextual information. Based on the request above:
+Example:
+User request: "quero um anúncio para um aplicativo de finanças pessoais"
 
-Generate a JSON with the following estimated information, completing any missing parts:
+Expected JSON:
+{
+  "productName": "Aplicativo de Finanças Pessoais",
+  "targetAudience": "Adultos que querem economizar dinheiro",
+  "keyBenefits": ["Organize gastos", "Defina metas", "Acompanhe despesas em tempo real"],
+  "tone": "Confiável e encorajador",
+  "callToAction": "Baixe agora o app e assuma o controle da sua vida financeira"
+}
+
+Now based on the current user request above, return only a valid pure JSON in the format:
 
 {
   "productName": string,
@@ -17,9 +30,13 @@ Generate a JSON with the following estimated information, completing any missing
   "callToAction": string
 }
 
-Use realistic terms. Do not use placeholders like "product" or leave fields empty. Return **only a valid pure JSON**, with no explanations, comments, or extra markings.
+- Do not leave fields blank
+- Do not use placeholders like "produto"
+- Respond with **only the JSON**
+- No extra text, explanation, or formatting
 `.trim();
     }
+
 
 
     static buildTextPromptFromStructured(data: AdPromptData): string {

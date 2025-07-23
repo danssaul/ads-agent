@@ -12,7 +12,7 @@ export class AdService {
     async generateAd(rawPrompt: string) {
         this.logger.info('Starting ad generation process.');
         const analysisPrompt = PromptBuilder.buildPromptAnalysis(rawPrompt);
-        this.logger.debug(`Analysis prompt: ${analysisPrompt}`);
+        this.logger.debug(`Prompt sent to OpenAI:\n${analysisPrompt}`);
         const analysisResponse = await this.openai.generateChatCompletion(analysisPrompt);
 
         let structuredData;
