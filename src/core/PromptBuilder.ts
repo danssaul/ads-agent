@@ -3,9 +3,11 @@ import { AdPromptData } from "./AdPromptData";
 export class PromptBuilder {
     static buildPromptAnalysis(userPrompt: string): string {
         return `
-You are a strict JSON generator.
+"${userPrompt}"
 
-Extract structured data from the user prompt below, and return a valid JSON object with the following fields:
+You are a marketing assistant with access to contextual information. Based on the request above:
+
+Generate a JSON with the following estimated information, completing any missing parts:
 
 {
   "productName": string,
@@ -15,12 +17,7 @@ Extract structured data from the user prompt below, and return a valid JSON obje
   "callToAction": string
 }
 
-DO NOT invent or guess any data. 
-If the information is not explicitly stated, return an empty string or empty array for that field.
-Return ONLY the JSON. No explanation or extra text.
-
-User prompt:
-"${userPrompt}"
+Use realistic terms. Do not use placeholders like "product" or leave fields empty. Return **only a valid pure JSON**, with no explanations, comments, or extra markings.
 `.trim();
     }
 
