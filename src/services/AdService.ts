@@ -5,79 +5,58 @@ import { AdPromptData } from "../core/AdPromptData";
 
 export class AdService {
     constructor(
-        private readonly openai: OpenAIProvider,
+        private readonly provider: OpenAIProvider,
         private readonly logger: any
     ) { }
 
-    async generateAd(rawPrompt: string) {
-        this.logger.info('Starting ad generation process.');
-        const analysisPrompt = PromptBuilder.buildPromptAnalysis(rawPrompt);
-        this.logger.debug(`Prompt sent to OpenAI:\n${analysisPrompt}`);
-        const analysisResponse = await this.openai.generateChatCompletion(analysisPrompt);
+async generateAd(rawPrompt: string) {
+    this.logger.info('Starting ad generation process.');
+    let structuredData: AdPromptData;
 
-        let structuredData;
+    try {
+        structuredData = await this.provider.generateStructuredAdData(rawPrompt);
+        this.logger.debug('Structured data extracted via function calling.');
+    } catch (err) {
+        this.logger.error('Function calling failed. Falling back to legacy prompt analysis.', err);
+        const analysisPrompt = PromptBuilder.buildPromptAnalysis(rawPrompt);
+        const analysisResponse = await this.provider.generateChatCompletion(analysisPrompt);
+
         try {
             structuredData = JSON.parse(analysisResponse);
-            this.logger.debug('Structured data parsed successfully.');
+            this.logger.debug('Parsed structured data from legacy prompt.');
         } catch (e) {
-            this.logger.error(`Failed to parse structured prompt data: ${analysisResponse}`);
-            throw new AppError("Could not parse structured prompt data: " + analysisResponse, 400);
-        }
-        if (this.isWeakContent(structuredData)) {
-            this.logger.warn("Structured data is weak or incomplete. Attempting fallback...");
-            structuredData = await this.fallbackWithSearch(rawPrompt);
-        }
+            this.logger.error(`Failed to parse legacy structured data: ${analysisResponse}`);
+            this.logger.warn('Attempting fallbackWithSearch with estimated completion…');
 
-        const textPrompt = PromptBuilder.buildTextPromptFromStructured(structuredData);
-        this.logger.debug(`Text prompt: ${textPrompt}`);
-        const adText = await this.openai.generateChatCompletion(textPrompt);
+            const fallbackPrompt = PromptBuilder.buildFallbackPrompt(rawPrompt);
+            const fallbackResponse = await this.provider.generateChatCompletion(fallbackPrompt);
 
-        const imagePrompt = PromptBuilder.buildImagePromptFromStructured({
-            productName: structuredData.productName,
-            keyBenefits: structuredData.keyBenefits,
-        });
-        this.logger.debug(`Image prompt: ${imagePrompt}`);
-        const imageUrl = await this.openai.generateImage(imagePrompt);
-
-        this.logger.info('Ad generation completed.');
-        return {
-            ad: {
-                text: adText,
-                imageUrl: imageUrl,
-            },
-        };
-    }
-
-    private isWeakContent(data: AdPromptData): boolean {
-        const isEmpty = (value: string | string[]) => {
-            if (Array.isArray(value)) return value.length === 0 || value.every(v => !v.trim());
-            return !value.trim() || value.trim().length < 3;
-        };
-
-        return (
-            isEmpty(data.productName) ||
-            isEmpty(data.targetAudience) ||
-            isEmpty(data.keyBenefits) ||
-            isEmpty(data.tone) ||
-            isEmpty(data.callToAction) ||
-            /\n{2,}/.test(data.callToAction) ||
-            /\n{2,}/.test(data.productName)
-        );
-    }
-
-    private async fallbackWithSearch(prompt: string): Promise<AdPromptData> {
-        const fallbackPrompt = PromptBuilder.buildFallbackPrompt(prompt);
-        const chatResponse = await this.openai.generateChatCompletion(fallbackPrompt);
-
-        try {
-            const parsed: AdPromptData = JSON.parse(chatResponse);
-            this.logger.info("Fallback successful.");
-            return parsed;
-        } catch (err) {
-            this.logger.error(`Fallback parsing failed. Raw response: ${chatResponse}`);
-            throw new AppError("Both primary and fallback prompt parsing failed", 500);
+            try {
+                structuredData = JSON.parse(fallbackResponse);
+                this.logger.debug('Parsed structured data from fallback estimation.');
+            } catch (e2) {
+                this.logger.error(`Final fallback also failed: ${fallbackResponse}`);
+                throw new AppError("Ad structure parsing failed from all methods.", 400);
+            }
         }
     }
 
+    const textPrompt = PromptBuilder.buildTextPromptFromStructured(structuredData);
+    const adText = await this.provider.generateChatCompletion(textPrompt);
+
+    const imagePrompt = PromptBuilder.buildImagePromptFromStructured({
+        productName: structuredData.productName,
+        keyBenefits: structuredData.keyBenefits,
+    });
+    const imageUrl = await this.provider.generateImage(imagePrompt);
+
+    this.logger.info('Ad generation completed.');
+    return {
+        ad: {
+            text: adText,
+            imageUrl: imageUrl,
+        },
+    };
+}
 
 }

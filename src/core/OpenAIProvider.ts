@@ -48,34 +48,43 @@ export class OpenAIProvider {
     }
   }
 
-  private async fallbackWithSearch(prompt: string): Promise<AdPromptData> {
-    const fallbackPrompt = `
-Você é um assistente de marketing com acesso a informações contextuais. Com base na seguinte solicitação:
+  async generateStructuredAdData(userPrompt: string): Promise<AdPromptData> {
+        const response = await this.openai.chat.completions.create({
+            model: "gpt-4-0613",
+            messages: [{
+                role: "user",
+                content: `Analyze the following ad request and extract structured data: "${userPrompt}"`,
+            }],
+            tools: [{
+                type: "function",
+                function: {
+                    name: "extractAdPromptData",
+                    description: "Extracts structured ad information from a user request",
+                    parameters: {
+                        type: "object",
+                        properties: {
+                            productName: { type: "string" },
+                            targetAudience: { type: "string" },
+                            keyBenefits: {
+                                type: "array",
+                                items: { type: "string" }
+                            },
+                            tone: { type: "string" },
+                            callToAction: { type: "string" }
+                        },
+                        required: ["productName", "targetAudience", "keyBenefits", "tone", "callToAction"]
+                    }
+                }
+            }],
+            tool_choice: "auto"
+        });
 
-"${prompt}"
+        const toolCall = response.choices[0]?.message?.tool_calls?.[0];
+        if (!toolCall || toolCall.function.name !== "extractAdPromptData") {
+            throw new AppError("Function call failed or returned invalid function");
+        }
 
-Gere um JSON com as seguintes informações estimadas, completando o que faltar:
-
-{
-  "productName": string,
-  "targetAudience": string,
-  "keyBenefits": string[],
-  "tone": string,
-  "callToAction": string
-}
-
-Use termos realistas. Não use placeholders como "produto" ou campos vazios. Retorne **apenas um JSON puro e válido**, sem explicações, comentários ou marcações extras.`;
-
-    const chatResponse = await this.generateChatCompletion(fallbackPrompt);
-
-    try {
-      const parsed: AdPromptData = JSON.parse(chatResponse);
-      this.logger.info("Fallback successful.");
-      return parsed;
-    } catch (err) {
-      this.logger.error(`Fallback parsing failed. Raw response: ${chatResponse}`);
-      throw new AppError("Both primary and fallback prompt parsing failed", 500);
+        return JSON.parse(toolCall.function.arguments) as AdPromptData;
     }
-  }
 
 }
