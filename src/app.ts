@@ -1,16 +1,18 @@
-import express from 'express';
-import dotenv from 'dotenv';
-import helmet from 'helmet';
+import express from "express";
+import { errorHandler } from "./utils/errorHandler";
+import { AdController } from "./controllers/adController";
+import { AdService } from "./services/AdService";
+import { OpenAIProvider } from "./core/OpenAIProvider";
+import logger from "./utils/logger";
 
-dotenv.config();
+const openaiProvider = new OpenAIProvider(logger);
+const adService = new AdService(openaiProvider, logger);
+const adController = new AdController(adService, logger);
 
 const app = express();
 
-app.use(helmet());
 app.use(express.json());
+app.post("/api/ads", adController.generateAdFromPrompt.bind(adController));
+app.use(errorHandler);
 
-app.get('/health', (_, res) => {
-  res.status(200).json({ status: 'ok' });
-});
-
-export default app;
+export { app };
