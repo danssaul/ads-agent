@@ -17,7 +17,7 @@ async generateAd(rawPrompt: string) {
         structuredData = await this.provider.generateStructuredAdData(rawPrompt);
         this.logger.debug('Structured data extracted via function calling.');
     } catch (err) {
-        this.logger.error('Function calling failed. Falling back to legacy prompt analysis.', err);
+        this.logger.debug('Function calling failed. Falling back to legacy prompt analysis.', err);
         const analysisPrompt = PromptBuilder.buildPromptAnalysis(rawPrompt);
         const analysisResponse = await this.provider.generateChatCompletion(analysisPrompt);
 
