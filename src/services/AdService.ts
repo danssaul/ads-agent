@@ -2,11 +2,12 @@ import { OpenAIProvider } from "../core/OpenAIProvider";
 import { PromptBuilder } from "../core/PromptBuilder";
 import { AppError } from "../utils/AppError";
 import { AdPromptData } from "../core/AdPromptData";
+import { ILogger } from "../utils/ILogger";
 
 export class AdService {
     constructor(
         private readonly provider: OpenAIProvider,
-        private readonly logger: any
+        private readonly logger: ILogger
     ) { }
 
 async generateAd(rawPrompt: string) {
@@ -15,7 +16,7 @@ async generateAd(rawPrompt: string) {
 
     try {
         structuredData = await this.provider.generateStructuredAdData(rawPrompt);
-        this.logger.debug('Structured data extracted via function calling.');
+        this.logger.warn('Structured data extracted via function calling.');
     } catch (err) {
         this.logger.debug('Function calling failed. Falling back to legacy prompt analysis.', err);
         const analysisPrompt = PromptBuilder.buildPromptAnalysis(rawPrompt);
@@ -23,7 +24,7 @@ async generateAd(rawPrompt: string) {
 
         try {
             structuredData = JSON.parse(analysisResponse);
-            this.logger.debug('Parsed structured data from legacy prompt.');
+            this.logger.info('Parsed structured data from legacy prompt.');
         } catch (e) {
             this.logger.error(`Failed to parse legacy structured data: ${analysisResponse}`);
             this.logger.warn('Attempting fallbackWithSearch with estimated completion…');
@@ -33,7 +34,7 @@ async generateAd(rawPrompt: string) {
 
             try {
                 structuredData = JSON.parse(fallbackResponse);
-                this.logger.debug('Parsed structured data from fallback estimation.');
+                this.logger.info('Parsed structured data from fallback estimation.');
             } catch (e2) {
                 this.logger.error(`Final fallback also failed: ${fallbackResponse}`);
                 throw new AppError("Ad structure parsing failed from all methods.", 400);

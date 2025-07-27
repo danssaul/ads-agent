@@ -3,8 +3,9 @@ import { errorHandler } from "./utils/errorHandler";
 import { AdController } from "./controllers/adController";
 import { AdService } from "./services/AdService";
 import { OpenAIProvider } from "./core/OpenAIProvider";
-import logger from "./utils/logger";
+import { Logger } from "./utils/logger"
 
+const logger = new Logger();
 const openaiProvider = new OpenAIProvider(logger);
 const adService = new AdService(openaiProvider, logger);
 const adController = new AdController(adService, logger);

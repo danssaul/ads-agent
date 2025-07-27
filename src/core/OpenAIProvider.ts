@@ -1,11 +1,13 @@
 import OpenAI from "openai";
 import { AppError } from "../utils/AppError";
 import { AdPromptData } from "../core/AdPromptData";
+import { AIProvider } from "./AIprovider";
+import { ILogger } from "../utils/ILogger";
 
-export class OpenAIProvider {
+export class OpenAIProvider implements AIProvider {
   private readonly openai: OpenAI;
 
-  constructor(private readonly logger: any) {
+  constructor(private readonly logger: ILogger) {
     const apiKey = process.env.OPENAI_API_KEY;
     if (!apiKey) {
       this.logger.error('OPENAI_API_KEY is not set in environment variables.');
